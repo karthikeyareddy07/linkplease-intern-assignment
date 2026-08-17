@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkPlease — Creator Automation Command Center</title>
+    <meta name="description" content="Turn Instagram comments into automated DM conversations with zero rate limit errors.">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FF5E62'><path d='M12 2C6.48 2 2 6.03 2 11c0 2.87 1.5 5.42 3.84 7.08L5 22l4.31-1.44C10.15 20.8 11.06 21 12 21c5.52 0 10-4.03 10-9s-4.48-9-10-9zm1 13.5l-3.5-3.5 1.41-1.41L13 12.67l4.59-4.59L19 9.5 13 15.5z'/></svg>">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ==========================================
+             Left Navigation Rail / Sidebar
+             ========================================== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="#overview" class="brand-wrapper" onclick="switchTab('overview')">
+                    <div class="brand-logo-badge">
+                        <!-- Custom LinkPlease Dynamic Comment-to-DM Logo -->
+                        <svg viewBox="0 0 24 24">
+                            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-3 8.5l-4.5 4.5-2.5-2.5 1.41-1.41L12.5 12.2l3.09-3.09L17 10.5z"/>
+                        </svg>
+                    </div>
+                    <div class="brand-info">
+                        <span class="brand-name">LinkPlease</span>
+                        <span class="brand-tagline">Automation Engine</span>
+                    </div>
+                </a>
+                <div class="brand-pulse-badge" title="Live Engine Connected"></div>
+            </div>
+
+            <div class="sidebar-section-title">Navigation</div>
+            <nav class="sidebar-nav">
+                <a class="nav-item active" data-tab="overview">
+                    <span class="nav-icon">⚡</span>
+                    <span>Overview</span>
+                </a>
+                <a class="nav-item" data-tab="automations">
+                    <span class="nav-icon">🪄</span>
+                    <span>Automations</span>
+                    <span class="nav-badge active-badge" id="sidebar-rules-badge">0</span>
+                </a>
+                <a class="nav-item" data-tab="comments">
+                    <span class="nav-icon">💬</span>
+                    <span>Comments</span>
+                </a>
+                <a class="nav-item" data-tab="messages">
+                    <span class="nav-icon">✉️</span>
+                    <span>Messages</span>
+                </a>
+                <a class="nav-item" data-tab="activity">
+                    <span class="nav-icon">🕒</span>
+                    <span>Activity</span>
+                </a>
+                <a class="nav-item" data-tab="analytics">
+                    <span class="nav-icon">📊</span>
+                    <span>Analytics</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a class="nav-item" data-tab="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+                <a class="nav-item" onclick="openTestModal()">
+                    <span class="nav-icon">🧪</span>
+                    <span>Test Simulator</span>
+                </a>
+                <div class="user-profile-pill">
+                    <div class="user-avatar">KR</div>
+                    <div class="user-details">
+                        <span class="user-name">Karthikeya Reddy</span>
+                        <span class="user-role">Founder / Creator</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ==========================================
+             Main Workspace Wrapper
+             ========================================== -->
+        <main class="main-wrapper">
+            <!-- Slim Top Bar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+                    <div class="page-title-group">
+                        <h1 class="page-main-heading" id="page-main-heading">Command Center</h1>
+                        <span class="page-sub-heading" id="page-sub-heading">Turn your comments into conversations</span>
+                    </div>
+                </div>
+
+                <div class="topbar-right">
+                    <!-- Live Rate Limit & Health Status Pill -->
+                    <div class="system-status-pill">
+                        <span class="status-dot"></span>
+                        <span>Automation operational</span>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="topbar-search">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="topbar-search-input" placeholder="Search rules or comments...">
+                        <span class="search-shortcut-badge">⌘K</span>
+                    </div>
+
+                    <!-- Refresh Button -->
+                    <button class="btn-icon" id="btn-refresh" title="Refresh Live Data" onclick="handleManualRefresh()">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+                        </svg>
+                    </button>
+
+                    <!-- Create Automation CTA -->
+                    <button class="btn-primary" onclick="openCreateRuleModal()">
+                        <span>+</span>
+                        <span>Create Automation</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- ==========================================
+                 Dynamic Content Area (Views)
+                 ========================================== -->
+            <div class="content-area">
+
+                <!-- 1. OVERVIEW VIEW -->
+                <section class="page-view active" id="view-overview">
+                    <!-- Hero Section -->
+                    <div class="hero-card">
+                        <div class="hero-inner">
+                            <div class="hero-title-group">
+                                <h2>Good evening, Karthikeya</h2>
+                                <p class="hero-subtitle">
+                                    Your automation engine is actively listening to incoming Instagram webhooks, applying keyword triggers, and dispatching rate-limited DMs with zero drops.
+                                </p>
+                                <div class="hero-metrics-pill-row">
+                                    <div class="hero-pill">
+                                        <span>Active Ingests:</span>
+                                        <strong id="hero-active-count">0</strong>
+                                    </div>
+                                    <div class="hero-pill">
+                                        <span>Rate Limit Guard:</span>
+                                        <strong style="color: var(--emerald-text);">10 req / 60s OK</strong>
+                                    </div>
+                                    <div class="hero-pill">
+                                        <span>WAL Mode:</span>
+                                        <strong style="color: var(--sky-text);">Enabled</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Visual Step-by-Step Flow Representation -->
+                            <div class="hero-flow-diagram">
+                                <div class="flow-step-node">
+                                    <span class="flow-node-tag">1. Comment</span>
+                                    <div class="flow-node-box">
+                                        💬 "PRICE please 🙏"
+                                    </div>
+                                </div>
+                                <div class="flow-arrow-icon">➔</div>
+                                <div class="flow-step-node">
+                                    <span class="flow-node-tag">2. Matched Rule</span>
+                                    <div class="flow-node-box highlight" id="hero-node-rule">
+                                        🏷️ PRICE
+                                    </div>
+                                </div>
+                                <div class="flow-arrow-icon">➔</div>
+                                <div class="flow-step-node">
+                                    <span class="flow-node-tag">3. Direct Message</span>
+                                    <div class="flow-node-box" id="hero-node-msg">
+                                        ✉️ Price list sent
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Distinct Metric Cards (Connected to GET /stats) -->
+                    <div class="metrics-grid">
+                        <!-- Sent Metric Card -->
+                        <div class="metric-card card-sent">
+                            <div class="metric-header">
+                                <span class="metric-label">Confirmed Delivered</span>
+                                <div class="metric-icon-badge">✓</div>
+                            </div>
+                            <div class="metric-value-row">
+                                <span class="metric-number" id="metric-sent">0</span>
+                                <span class="metric-trend-pill trend-positive">Delivered</span>
+                            </div>
+                            <span class="metric-footer-note">Reconciled via upstream status polling</span>
+                        </div>
+
+                        <!-- Queued Metric Card -->
+                        <div class="metric-card card-queued">
+                            <div class="metric-header">
+                                <span class="metric-label">In Pipeline / Queued</span>
+                                <div class="metric-icon-badge">⏳</div>
+                            </div>
+                            <div class="metric-value-row">
+                                <span class="metric-number" id="metric-queued">0</span>
+                                <span class="metric-trend-pill trend-neutral">Sliding Window</span>
+                            </div>
+                            <span class="metric-footer-note">Enforcing &le; 10 requests per rolling 60s</span>
+                        </div>
+
+                        <!-- Failed Metric Card -->
+                        <div class="metric-card card-failed">
+                            <div class="metric-header">
+                                <span class="metric-label">Failed / Retried Out</span>
+                                <div class="metric-icon-badge">✕</div>
+                            </div>
+                            <div class="metric-value-row">
+                                <span class="metric-number" id="metric-failed">0</span>
+                                <span class="metric-trend-pill trend-warning">Terminal</span>
+                            </div>
+                            <span class="metric-footer-note">Max 5 exponential backoff retries</span>
+                        </div>
+
+                        <!-- Duplicates Blocked Metric Card -->
+                        <div class="metric-card card-duplicates">
+                            <div class="metric-header">
+                                <span class="metric-label">Duplicates Prevented</span>
+                                <div class="metric-icon-badge">🛡️</div>
+                            </div>
+                            <div class="metric-value-row">
+                                <span class="metric-number" id="metric-duplicates">0</span>
+                                <span class="metric-trend-pill trend-protection">Protected</span>
+                            </div>
+                            <span class="metric-footer-note">Durable (rule_id, user_id) guarantee</span>
+                        </div>
+                    </div>
+
+                    <!-- Two-Column Overview: Activity & Quick Actions -->
+                    <div class="two-col-grid">
+                        <div class="panel-card">
+                            <div class="panel-header">
+                                <h3 class="panel-title">
+                                    <span>Live Activity Stream</span>
+                                </h3>
+                                <button class="panel-link-btn" onclick="switchTab('activity')">View all ledger ➔</button>
+                            </div>
+                            <div class="activity-timeline" id="overview-activity-timeline">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="panel-card">
+                            <div class="panel-header">
+                                <h3 class="panel-title">Engine Quick Test</h3>
+                                <span class="panel-subtitle">Instant Webhook Ingest</span>
+                            </div>
+                            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                                Trigger simulated comment events directly to test keyword boundary detection, deduplication, and rate-limited DM queuing in real time.
+                            </p>
+                            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+                                <button class="btn-primary" onclick="simulateRuleMatch('PRICE')">
+                                    ▶ Simulate "PRICE" Comment
+                                </button>
+                                <button class="btn-secondary" onclick="openTestModal()">
+                                    Custom Comment Simulator...
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. AUTOMATIONS (RULES) VIEW -->
+                <section class="page-view" id="view-automations">
+                    <div class="panel-header" style="margin-bottom: 8px;">
+                        <div>
+                            <h2 style="font-size: 20px; font-weight: 800; letter-spacing: -0.4px;">Active Automations</h2>
+                            <p style="font-size: 13px; color: var(--text-muted);">
+                                Configure what LinkPlease responds with when a follower comments with a specific keyword.
+                            </p>
+                        </div>
+                        <button class="btn-primary" onclick="openCreateRuleModal()">+ Create Automation</button>
+                    </div>
+
+                    <div class="rules-grid" id="automations-grid">
+                        <!-- Populated dynamically -->
+                    </div>
+                </section>
+
+                <!-- 3. COMMENTS FEED VIEW -->
+                <section class="page-view" id="view-comments">
+                    <div class="panel-header" style="margin-bottom: 8px;">
+                        <div>
+                            <h2 style="font-size: 20px; font-weight: 800; letter-spacing: -0.4px;">Comments Feed</h2>
+                            <p style="font-size: 13px; color: var(--text-muted);">
+                                Ingested Instagram comments, matched keyword triggers, and DM dispatch outcomes.
+                            </p>
+                        </div>
+                        <button class="btn-secondary" onclick="openTestModal()">+ Send Test Comment</button>
+                    </div>
+
+                    <div class="comments-feed-list" id="comments-feed-list">
+                        <!-- Populated dynamically -->
+                    </div>
+                </section>
+
+                <!-- 4. MESSAGES / CONVERSATIONS VIEW -->
+                <section class="page-view" id="view-messages">
+                    <div class="conversations-split-layout">
+                        <div class="convo-list-panel">
+                            <div class="convo-list-header">User Conversations</div>
+                            <div class="convo-items-scroll" id="convo-items-scroll">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="convo-detail-panel">
+                            <div class="convo-detail-header" id="convo-detail-header">
+                                <span style="font-weight: 700;">Select a conversation to view lifecycle</span>
+                            </div>
+                            <div class="convo-detail-body" id="convo-detail-body">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">✉️</div>
+                                    <h3>Conversation Inspector</h3>
+                                    <p>Select any follower on the left to review the exact comment trigger, DM payload, and 5-stage delivery lifecycle.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. ACTIVITY VIEW -->
+                <section class="page-view" id="view-activity">
+                    <div class="panel-card">
+                        <div class="panel-header">
+                            <div>
+                                <h2 style="font-size: 18px; font-weight: 800;">System Event Ledger</h2>
+                                <p style="font-size: 13px; color: var(--text-muted);">
+                                    Full chronological history of webhooks received, duplicate blocks, and DM job dispatches.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="activity-timeline" id="full-activity-timeline" style="margin-top: 12px;">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. ANALYTICS VIEW -->
+                <section class="page-view" id="view-analytics">
+                    <div class="analytics-grid">
+                        <div class="chart-card">
+                            <div class="panel-header">
+                                <h3 class="panel-title">DM Delivery Success Rate</h3>
+                                <span class="trend-positive" style="font-weight: 800; font-size: 16px;" id="analytics-delivery-rate">100%</span>
+                            </div>
+                            <p style="font-size: 13px; color: var(--text-secondary);">
+                                Ratio of accepted direct messages confirmed delivered by the reconciliation worker.
+                            </p>
+                            <div class="rate-limit-gauge-container">
+                                <div class="gauge-bar-track">
+                                    <div class="gauge-bar-fill" id="analytics-delivery-bar" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chart-card">
+                            <div class="panel-header">
+                                <h3 class="panel-title">Terminal Failure Rate</h3>
+                                <span class="trend-warning" style="font-weight: 800; font-size: 16px;" id="analytics-failure-rate">0.0%</span>
+                            </div>
+                            <p style="font-size: 13px; color: var(--text-secondary);">
+                                Percentage of messages that encountered permanent 400s or exceeded 5 retry attempts.
+                            </p>
+                            <div class="rate-limit-gauge-container">
+                                <div class="gauge-bar-track">
+                                    <div class="gauge-bar-fill" id="analytics-failure-bar" style="width: 0%; background: var(--rose-500);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. SETTINGS VIEW -->
+                <section class="page-view" id="view-settings">
+                    <div class="settings-section-card">
+                        <div class="settings-group">
+                            <div class="settings-label-col">
+                                <h4>PseudoGram API Connection</h4>
+                                <p>Upstream mock social platform configuration and authentication.</p>
+                            </div>
+                            <div class="settings-field-col">
+                                <div class="api-key-masked-box">
+                                    <span>API Key: ••••••••••••••••••••••••••••</span>
+                                    <span class="system-status-pill" style="padding: 3px 8px; font-size: 11px;">Connected</span>
+                                </div>
+                                <span style="font-size: 12px; color: var(--text-muted);">
+                                    Upstream Base URL: <code>https://pseudogram-api.onrender.com</code>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <div class="settings-label-col">
+                                <h4>Rate Limiting Strategy</h4>
+                                <p>Sliding window token bucket configuration.</p>
+                            </div>
+                            <div class="settings-field-col">
+                                <div style="font-size: 13px; font-weight: 600;">
+                                    Max Quota: <span style="color: var(--coral-500);">10 mutating requests per rolling 60s</span>
+                                </div>
+                                <p style="font-size: 12px; color: var(--text-secondary);">
+                                    Status check GET requests are exempt from rate limiting and polled independently.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <div class="settings-label-col">
+                                <h4>Database & Storage</h4>
+                                <p>SQLite Write-Ahead Logging persistence.</p>
+                            </div>
+                            <div class="settings-field-col">
+                                <div style="font-size: 13px; font-weight: 600;">
+                                    Engine: SQLite with <code>PRAGMA journal_mode=WAL;</code>
+                                </div>
+                                <span style="font-size: 12px; color: var(--text-muted);">
+                                    File: <code>linkplease.db</code> (Persistent across restarts)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ==========================================
+         Create Automation Modal / Drawer
+         ========================================== -->
+    <div class="modal-overlay" id="create-rule-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Create Automation</h3>
+                <button class="modal-close-btn" onclick="closeModals()">✕</button>
+            </div>
+
+            <form id="create-rule-form">
+                <div class="modal-body-split">
+                    <!-- Left Form Column -->
+                    <div class="form-column">
+                        <div class="form-group">
+                            <label class="form-label" for="modal-keyword-input">
+                                <span>Step 1: Keyword Trigger</span>
+                                <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">When someone comments...</span>
+                            </label>
+                            <input type="text" class="form-input" id="modal-keyword-input" placeholder="e.g. PRICE, DISCOUNT, LINK, VIP" required autocomplete="off">
+                            
+                            <div class="keyword-suggestions">
+                                <span style="font-size: 11px; color: var(--text-muted);">Suggestions:</span>
+                                <button type="button" class="suggestion-chip" onclick="selectSuggestion('PRICE')">PRICE</button>
+                                <button type="button" class="suggestion-chip" onclick="selectSuggestion('LINK')">LINK</button>
+                                <button type="button" class="suggestion-chip" onclick="selectSuggestion('DISCOUNT')">DISCOUNT</button>
+                                <button type="button" class="suggestion-chip" onclick="selectSuggestion('VIP')">VIP</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="modal-message-input">
+                                <span>Step 2: Automated Direct Message</span>
+                                <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Send them a DM...</span>
+                            </label>
+                            <textarea class="form-textarea" id="modal-message-input" placeholder="e.g. Hey! Here is the pricing link you requested: https://example.com/pricing" required></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Right Interactive Preview Column -->
+                    <div class="preview-column">
+                        <div class="preview-title">Live Automation Preview</div>
+                        <div class="phone-mockup">
+                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Comment Trigger:</div>
+                            <div class="chat-bubble-received" style="font-size: 12px; margin-bottom: 6px;">
+                                "Can you send the <strong style="color: var(--coral-500);" id="preview-keyword">KEYWORD</strong> please? 🙏"
+                            </div>
+
+                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 8px;">LinkPlease Automated Reply:</div>
+                            <div class="chat-bubble-sent" style="font-size: 12px;" id="preview-message">
+                                Your automated DM response will appear here.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModals()">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Automation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         Test Comment Simulator Modal
+         ========================================== -->
+    <div class="modal-overlay" id="test-simulator-modal">
+        <div class="modal-container" style="width: 540px;">
+            <div class="modal-header">
+                <h3>Simulate Test Comment Webhook</h3>
+                <button class="modal-close-btn" onclick="closeModals()">✕</button>
+            </div>
+
+            <form id="test-simulator-form">
+                <div style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="test-keyword-input">Keyword to Match</label>
+                        <input type="text" class="form-input" id="test-keyword-input" value="PRICE" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="test-username-input">Instagram Username</label>
+                        <input type="text" class="form-input" id="test-username-input" value="creator.fan" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="test-comment-input">Full Comment Text</label>
+                        <input type="text" class="form-input" id="test-comment-input" value="Hey! What is the PRICE? 🙏" required>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeModals()">Cancel</button>
+                    <button type="submit" class="btn-primary">Send Test Webhook</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

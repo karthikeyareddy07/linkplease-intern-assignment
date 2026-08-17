@@ -378,6 +378,152 @@ class Database:
             finally:
                 conn.close()
 
+    async def get_recent_activity(self, limit: int = 40) -> List[Dict[str, Any]]:
+        """Retrieve recent chronological activity across events, blocks, and jobs."""
+        async with self._lock:
+            conn = self._get_connection()
+            try:
+                activity = []
+                
+                # 1. Recent Events
+                ev_cur = conn.execute(
+                    """
+                    SELECT 'event' as type, event_type, event_id, comment_id, user_id, text, received_at as timestamp
+                    FROM events
+                    ORDER BY received_at DESC
+                    LIMIT ?
+                    """,
+                    (limit,)
+                )
+                for row in ev_cur.fetchall():
+                    d = dict(row)
+                    if d["event_type"] == "comment.deleted":
+                        d["title"] = f"Comment deleted ({d['comment_id']})"
+                        d["category"] = "comments"
+                        d["status"] = "info"
+                    else:
+                        d["title"] = f"Comment received from @{d['user_id'] or 'unknown'}"
+                        d["category"] = "comments"
+                        d["status"] = "success"
+                    activity.append(d)
+
+                # 2. Duplicate Blocks
+                dup_cur = conn.execute(
+                    """
+                    SELECT 'duplicate_block' as type, 'duplicate_blocked' as event_type,
+                           id as event_id, comment_id, user_id, rule_id as text, blocked_at as timestamp
+                    FROM duplicate_blocks
+                    ORDER BY blocked_at DESC
+                    LIMIT ?
+                    """,
+                    (limit,)
+                )
+                for row in dup_cur.fetchall():
+                    d = dict(row)
+                    d["title"] = f"Duplicate blocked for @{d['user_id']}"
+                    d["category"] = "duplicates"
+                    d["status"] = "warning"
+                    activity.append(d)
+
+                # 3. Recent Job updates
+                job_cur = conn.execute(
+                    """
+                    SELECT 'job' as type, status as event_type, job_id as event_id, comment_id, user_id,
+                           message as text, updated_at as timestamp, dm_id, retries, last_error
+                    FROM jobs
+                    ORDER BY updated_at DESC
+                    LIMIT ?
+                    """,
+                    (limit,)
+                )
+                for row in job_cur.fetchall():
+                    d = dict(row)
+                    st = d["event_type"]
+                    if st == "delivered":
+                        d["title"] = f"DM delivered to @{d['user_id']}"
+                        d["category"] = "messages"
+                        d["status"] = "success"
+                    elif st == "failed":
+                        d["title"] = f"DM dispatch failed for @{d['user_id']}"
+                        d["category"] = "failures"
+                        d["status"] = "error"
+                    elif st == "accepted":
+                        d["title"] = f"DM accepted, awaiting delivery check"
+                        d["category"] = "messages"
+                        d["status"] = "info"
+                    elif st == "queued":
+                        d["title"] = f"DM queued for @{d['user_id']}"
+                        d["category"] = "messages"
+                        d["status"] = "info"
+                    else:
+                        d["title"] = f"Job status: {st}"
+                        d["category"] = "messages"
+                        d["status"] = "info"
+                    activity.append(d)
+
+                # Sort combined list by timestamp descending
+                activity.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
+                return activity[:limit]
+            finally:
+                conn.close()
+
+    async def get_comments_feed(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Retrieve recent comments with matched rule details and DM job status."""
+        async with self._lock:
+            conn = self._get_connection()
+            try:
+                cur = conn.execute(
+                    """
+                    SELECT e.event_id, e.comment_id, e.post_id, e.user_id, e.text, e.sent_at, e.received_at,
+                           j.rule_id, j.status as dm_status, j.message as dm_message, j.dm_id,
+                           r.keyword as matched_keyword
+                    FROM events e
+                    LEFT JOIN jobs j ON e.comment_id = j.comment_id
+                    LEFT JOIN rules r ON j.rule_id = r.rule_id
+                    WHERE e.event_type = 'comment.created'
+                    ORDER BY e.received_at DESC
+                    LIMIT ?
+                    """,
+                    (limit,)
+                )
+                return [dict(row) for row in cur.fetchall()]
+            finally:
+                conn.close()
+
+    async def get_conversations(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Retrieve user conversation threads with message history and delivery timeline."""
+        async with self._lock:
+            conn = self._get_connection()
+            try:
+                cur = conn.execute(
+                    """
+                    SELECT j.job_id, j.user_id, j.comment_id, j.rule_id, j.message, j.status, j.dm_id,
+                           j.retries, j.last_error, j.created_at, j.updated_at,
+                           e.text as comment_text, e.post_id, e.sent_at as comment_sent_at,
+                           r.keyword as rule_keyword
+                    FROM jobs j
+                    LEFT JOIN events e ON j.comment_id = e.comment_id
+                    LEFT JOIN rules r ON j.rule_id = r.rule_id
+                    ORDER BY j.updated_at DESC
+                    LIMIT ?
+                    """,
+                    (limit,)
+                )
+                return [dict(row) for row in cur.fetchall()]
+            finally:
+                conn.close()
+
+    async def delete_rule(self, rule_id: str) -> bool:
+        """Delete a rule by its ID."""
+        async with self._lock:
+            conn = self._get_connection()
+            try:
+                with conn:
+                    cur = conn.execute("DELETE FROM rules WHERE rule_id = ?", (rule_id,))
+                    return cur.rowcount > 0
+            finally:
+                conn.close()
+
     async def reset(self):
         """Reset database tables for clean testing and simulations."""
         async with self._lock:
