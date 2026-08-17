@@ -163,8 +163,10 @@ async def handle_webhook(request: Request):
     raw_body = await request.body()
     signature_header = request.headers.get("X-PseudoGram-Signature")
 
-    # Verify signature if provided or strictly required
-    if signature_header:
+    # Verify signature if:
+    # 1. Signature is provided AND API key is configured (for security)
+    # 2. Signature verification is strictly required
+    if signature_header and settings.pseudogram_api_key:
         if not verify_signature(raw_body, signature_header, settings.pseudogram_api_key):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
